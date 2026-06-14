@@ -1,12 +1,10 @@
 #!/bin/bash
 # ============================================
 # 探店路线规划系统 - 快速更新脚本
-# 
-# 用于快速拉取代码并重启服务
-# 适合配合 GitHub Webhook 或定时任务使用
+# 项目前缀: td (tandian)
 # ============================================
 
-cd /opt/tandian
+cd /home/website/tandian
 
 echo "===== 开始更新 $(date '+%Y-%m-%d %H:%M:%S') ====="
 
@@ -24,8 +22,7 @@ echo "发现更新，开始部署..."
 git reset --hard origin/main
 git pull origin main
 
-# 重启服务
-docker compose down
+# 重新构建并启动（不删除数据卷，保留数据库）
 docker compose up -d --build
 
 # 等待启动

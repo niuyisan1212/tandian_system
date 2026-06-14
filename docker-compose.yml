@@ -1,10 +1,6 @@
 # ============================================
 # 探店路线规划系统 - Docker Compose 配置
-# 一键部署前后端服务
-# ============================================
-# 使用方法：
-#   开发环境: docker-compose up -d
-#   生产环境: docker-compose -f docker-compose.yml up -d
+# 项目前缀: td (tandian)
 # ============================================
 
 version: '3.8'
@@ -15,13 +11,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: tandian-frontend
+    container_name: td-frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     networks:
-      - tandian-network
+      - td-network
     restart: unless-stopped
 
   # 后端服务
@@ -29,23 +25,23 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: tandian-backend
+    container_name: td-backend
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/tandian_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://td-mysql:3306/tandian_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=niuhaoqing1212
     depends_on:
       - mysql
     networks:
-      - tandian-network
+      - td-network
     restart: unless-stopped
 
   # MySQL 数据库
   mysql:
     image: mysql:8.0
-    container_name: tandian-mysql
+    container_name: td-mysql
     ports:
       - "3306:3306"
     environment:
@@ -53,16 +49,17 @@ services:
       - MYSQL_DATABASE=tandian_system
       - TZ=Asia/Shanghai
     volumes:
-      - mysql-data:/var/lib/mysql
-      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - td-mysql-data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     networks:
-      - tandian-network
+      - td-network
     restart: unless-stopped
 
 networks:
-  tandian-network:
+  td-network:
+    name: td-network
     driver: bridge
 
 volumes:
-  mysql-data:
+  td-mysql-data:
+    name: td-mysql-data
