@@ -39,8 +39,8 @@ jobs:
             echo ""
             echo "[1/5] 拉取最新代码..."
             git fetch origin
-            git reset --hard origin/master
-            git pull origin master
+            git reset --hard origin/main
+            git pull origin main
             
             # 显示新版本
             echo "新版本: $(git rev-parse --short HEAD)"
