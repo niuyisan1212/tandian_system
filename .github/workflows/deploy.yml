@@ -1,0 +1,66 @@
+# ============================================
+# 探店路线规划系统 - 自动部署工作流
+# 触发条件：push 到 main 分支
+# ============================================
+
+name: Auto Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            echo "===== 开始自动部署 ====="
+            echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            
+            # 进入项目目录
+            cd ${{ secrets.PROJECT_PATH }}
+            
+            # 拉取最新代码
+            echo "1. 拉取最新代码..."
+            git pull origin main
+            
+            # 重新构建并启动容器
+            echo "2. 构建 Docker 镜像..."
+            docker compose down
+            
+            echo "3. 启动服务..."
+            docker compose up -d --build
+            
+            # 等待服务启动
+            echo "4. 等待服务启动..."
+            sleep 30
+            
+            # 检查服务状态
+            echo "5. 检查服务状态..."
+            docker compose ps
+            
+            # 清理未使用的镜像
+            echo "6. 清理未使用的镜像..."
+            docker image prune -f
+            
+            echo "===== 部署完成 ====="
+            echo "访问地址: http://${{ secrets.SERVER_HOST }}"
+
+      - name: Send notification
+        if: always()
+        run: |
+          echo "部署状态: ${{ job.status }}"

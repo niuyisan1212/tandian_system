@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探店路线规划系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <!-- 高德地图JS API - 需要加载的插件 -->
+  <script type="text/javascript">
+    window._AMapSecurityConfig = {
+      // 如果申请了安全密钥，请填写在这里；如果没有，可以删除此配置
+      securityJsCode: '55dff51094e9f5ddbcf1153a6cebf203'
+    }
+  </script>
+  
+  <!-- 高德地图 2.0 版本 -->
+  <script type="text/javascript">
+    // 动态加载高德地图SDK
+    (function() {
+      var script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://webapi.amap.com/maps?v=2.0&key=fc683a6ac5b6a586336aeb843514a4f4&plugin=AMap.Scale,AMap.ToolBar,AMap.Geolocation,AMap.Geocoder,AMap.PlaceSearch,AMap.AutoComplete,AMap.CitySearch';
+      script.onload = function() {
+        console.log('【高德地图SDK】加载成功');
+        window.AMapLoaded = true;
+        // 触发自定义事件通知地图已加载
+        window.dispatchEvent(new CustomEvent('amap-ready'));
+      };
+      script.onerror = function() {
+        console.error('【高德地图SDK】加载失败');
+        window.AMapError = true;
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
+  
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

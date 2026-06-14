@@ -1,0 +1,92 @@
+# ============================================
+# 探店路线规划系统 - Git 忽略文件
+# ============================================
+
+# ---------- 后端 ----------
+# Maven
+backend/target/
+backend/pom.xml.tag
+backend/pom.xml.backup
+backend/pom.xml.releaseBackup
+backend/pom.xml.versionsBackup
+backend/pom.xml.next
+backend/release.properties
+backend/dependency-reduced-pom.xml
+backend/buildNumber.properties
+backend/.mvn/timing.properties
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# IDE - Eclipse
+.settings/
+.classpath
+.project
+.metadata/
+bin/
+tmp/
+
+# IDE - VS Code
+.vscode/
+
+# 日志文件
+logs/
+*.log
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# ---------- 前端 ----------
+# 依赖目录
+frontend/node_modules/
+
+# 构建输出
+frontend/dist/
+
+# 本地环境配置
+frontend/.env.local
+frontend/.env.*.local
+
+# npm/yarn 调试日志
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ---------- 系统文件 ----------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ---------- 敏感信息 ----------
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 密钥文件（如果有）
+*.pem
+*.key
+*.p12
+
+# ---------- Docker ----------
+# Docker 数据卷（本地开发时）
+mysql-data/
