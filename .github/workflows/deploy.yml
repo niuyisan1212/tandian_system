@@ -1,6 +1,5 @@
 # ============================================
 # 探店路线规划系统 - 自动部署工作流
-# 触发条件：push 到 main 分支
 # ============================================
 
 name: Auto Deploy
@@ -17,50 +16,70 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: 47.108.59.58
-          username: root
-          password: NIUhaoqing1212
-          port: 22
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          command_timeout: 10m
           script: |
-            echo "===== 开始自动部署 ====="
-            echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=========================================="
+            echo "  开始自动部署 - $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "=========================================="
             
             # 进入项目目录
-            cd /opt/tandian
+            cd /home/website/tandian
+            
+            # 显示当前版本
+            echo "当前版本: $(git rev-parse --short HEAD)"
             
             # 拉取最新代码
-            echo "1. 拉取最新代码..."
-            git pull origin master
+            echo ""
+            echo "[1/5] 拉取最新代码..."
+            git fetch origin
+            git reset --hard origin/main
+            git pull origin main
             
-            # 重新构建并启动容器
-            echo "2. 构建 Docker 镜像..."
+            # 显示新版本
+            echo "新版本: $(git rev-parse --short HEAD)"
+            
+            # 停止旧容器
+            echo ""
+            echo "[2/5] 停止旧容器..."
             docker compose down
             
-            echo "3. 启动服务..."
+            # 构建并启动
+            echo ""
+            echo "[3/5] 构建并启动服务..."
             docker compose up -d --build
             
             # 等待服务启动
-            echo "4. 等待服务启动..."
+            echo ""
+            echo "[4/5] 等待服务启动..."
             sleep 30
             
             # 检查服务状态
-            echo "5. 检查服务状态..."
+            echo ""
+            echo "[5/5] 检查服务状态..."
             docker compose ps
             
-            # 清理未使用的镜像
-            echo "6. 清理未使用的镜像..."
+            # 清理
+            echo ""
+            echo "清理旧镜像..."
             docker image prune -f
             
-            echo "===== 部署完成 ====="
-            echo "访问地址: http://${{ secrets.SERVER_HOST }}"
+            echo ""
+            echo "=========================================="
+            echo "  部署完成！"
+            echo "=========================================="
 
-      - name: Send notification
+      - name: Deployment Status
         if: always()
         run: |
-          echo "部署状态: ${{ job.status }}"
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ 部署成功"
+          else
+            echo "❌ 部署失败"
+          fi
