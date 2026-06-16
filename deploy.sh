@@ -8,7 +8,7 @@ set -e  # 遇到错误立即退出
 
 # 配置变量（根据实际情况修改）
 PROJECT_DIR="/opt/tandian"
-GIT_BRANCH="main"
+GIT_BRANCH="master"
 
 # 颜色输出
 RED='\033[0;31m'

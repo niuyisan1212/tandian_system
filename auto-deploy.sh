@@ -12,7 +12,7 @@ set -e  # 遇到错误立即退出
 PROJECT_DIR="/home/website/tandian"
 
 # Git 分支
-GIT_BRANCH="main"
+GIT_BRANCH="master"
 
 # 是否强制拉取（覆盖本地修改）
 FORCE_PULL=true

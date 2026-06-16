@@ -1,6 +1,5 @@
 # ============================================
 # 探店路线规划系统 - 自动部署工作流
-# 部署流程：备份 → 拉代码 → 构建 → 恢复
 # ============================================
 
 name: Auto Deploy
@@ -65,8 +64,10 @@ jobs:
             echo ""
             echo "[2/5] 拉取最新代码..."
             git fetch origin
-            git reset --hard origin/main
-            git pull origin main
+            git reset --hard origin/master
+            git pull origin master
+            
+            # 显示新版本
             echo "新版本: $(git rev-parse --short HEAD)"
             
             # ==================== 步骤3: 构建并启动 ====================
