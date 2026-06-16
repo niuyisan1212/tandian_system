@@ -305,11 +305,10 @@ const handleAutoFill = async () => {
     const res = await searchShopInfo(formData.name.trim())
     if (res.data) {
       const info = res.data
-      
+      console.log(info)
       // 填充地址
-      if (info.address) {
-        formData.address = info.address
-      }
+      formData.address = info.address
+
       
       // 填充经纬度
       if (info.longitude && info.latitude) {
@@ -329,14 +328,11 @@ const handleAutoFill = async () => {
       }
       
       // 填充电话
-      if (info.phone) {
-        formData.phone = info.phone
-      }
+      formData.phone = info.phone
       
       // 填充营业时间
-      if (info.business_hour) {
-        formData.businessHours = info.business_hour
-      }
+      formData.businessHours = info.business_hour
+
       
       message.success('已自动填充店铺信息')
     } else {
