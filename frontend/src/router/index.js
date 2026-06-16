@@ -24,6 +24,12 @@ const routes = [
     name: 'ListDetail',
     component: () => import('@/views/ListDetail.vue'),
     meta: { title: '清单详情' }
+  },
+  {
+    path: '/guide',
+    name: 'Guide',
+    component: () => import('@/views/Guide.vue'),
+    meta: { title: '0元探店操作手册' }
   }
 ]
 
@@ -34,7 +40,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  document.title = to.meta.title || '探店路线规划系统'
+  document.title = to.meta.title || '大众点评探店路线规划系统'
   next()
 })
 

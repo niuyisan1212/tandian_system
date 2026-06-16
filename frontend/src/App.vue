@@ -4,7 +4,7 @@
       <a-layout style="min-height: 100vh">
         <!-- 顶部导航 -->
         <a-layout-header class="header">
-          <div class="logo">探店路线规划系统</div>
+          <div class="logo">大众点评探店路线规划系统</div>
           <a-menu
             v-model:selectedKeys="selectedKeys"
             theme="dark"
@@ -22,6 +22,10 @@
             <a-menu-item key="lists" @click="$router.push('/lists')">
               <UnorderedListOutlined />
               探店清单
+            </a-menu-item>
+            <a-menu-item key="guide" @click="$router.push('/guide')">
+              <BookOutlined />
+              <span class="menu-text">0元探店操作手册</span>
             </a-menu-item>
           </a-menu>
         </a-layout-header>
@@ -42,7 +46,8 @@ import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import { 
   EnvironmentOutlined, 
   ShopOutlined, 
-  UnorderedListOutlined 
+  UnorderedListOutlined,
+  BookOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -58,6 +63,8 @@ watch(
       selectedKeys.value = ['shops']
     } else if (path.startsWith('/lists')) {
       selectedKeys.value = ['lists']
+    } else if (path.startsWith('/guide')) {
+      selectedKeys.value = ['guide']
     }
   },
   { immediate: true }
@@ -73,8 +80,21 @@ watch(
 
 .logo {
   color: #fff;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: bold;
-  margin-right: 40px;
+  margin-right: 24px;
+  white-space: nowrap;
+}
+
+.menu-text {
+  white-space: nowrap;
+}
+
+.header :deep(.ant-menu-horizontal) {
+  flex: 1;
+}
+
+.header :deep(.ant-menu-item) {
+  padding: 0 12px;
 }
 </style>
