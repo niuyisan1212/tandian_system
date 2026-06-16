@@ -307,7 +307,7 @@ const handleAutoFill = async () => {
       const info = res.data
       
       // 填充地址
-      if (info.address && !formData.address) {
+      if (info.address) {
         formData.address = info.address
       }
       
@@ -329,12 +329,12 @@ const handleAutoFill = async () => {
       }
       
       // 填充电话
-      if (info.phone && !formData.phone) {
+      if (info.phone) {
         formData.phone = info.phone
       }
       
       // 填充营业时间
-      if (info.business_hour && !formData.businessHours) {
+      if (info.business_hour) {
         formData.businessHours = info.business_hour
       }
       
