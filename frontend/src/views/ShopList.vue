@@ -147,7 +147,13 @@
         :wrapper-col="{ span: 16 }"
       >
         <a-form-item label="🏪 店铺名称" name="name">
-          <a-input v-model:value="formData.name" placeholder="请输入店铺名称" />
+          <a-input-search
+            v-model:value="formData.name"
+            placeholder="输入店铺名称后点击搜索，自动填充信息"
+            :loading="autoFilling"
+            @search="handleAutoFill"
+            enter-button="搜索填充"
+          />
         </a-form-item>
 
         <a-form-item label="📁 店铺类别" name="category">
@@ -214,7 +220,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined } from '@ant-design/icons-vue'
-import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate } from '@/api'
+import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo } from '@/api'
 import LocationPicker from '@/components/LocationPicker.vue'
 import dayjs from 'dayjs'
 
@@ -227,6 +233,7 @@ const modalVisible = ref(false)
 const editingShop = ref(null)
 const formRef = ref()
 const locationPicker = ref()
+const autoFilling = ref(false)
 
 const pagination = reactive({
   current: 1,
@@ -284,6 +291,63 @@ const handleLocationSelect = (location) => {
   formData.address = location.address
   formData.longitude = location.longitude
   formData.latitude = location.latitude
+}
+
+// 根据店名自动填充信息
+const handleAutoFill = async () => {
+  if (!formData.name || formData.name.trim() === '') {
+    message.warning('请先输入店铺名称')
+    return
+  }
+  
+  autoFilling.value = true
+  try {
+    const res = await searchShopInfo(formData.name.trim())
+    if (res.data) {
+      const info = res.data
+      
+      // 填充地址
+      if (info.address && !formData.address) {
+        formData.address = info.address
+      }
+      
+      // 填充经纬度
+      if (info.longitude && info.latitude) {
+        formData.longitude = info.longitude
+        formData.latitude = info.latitude
+        
+        // 同步更新地图位置
+        if (locationPicker.value) {
+          setTimeout(() => {
+            locationPicker.value.setLocation(
+              info.longitude,
+              info.latitude,
+              info.address || formData.address
+            )
+          }, 200)
+        }
+      }
+      
+      // 填充电话
+      if (info.phone && !formData.phone) {
+        formData.phone = info.phone
+      }
+      
+      // 填充营业时间
+      if (info.business_hour && !formData.businessHours) {
+        formData.businessHours = info.business_hour
+      }
+      
+      message.success('已自动填充店铺信息')
+    } else {
+      message.info('未找到该店铺信息，请手动填写')
+    }
+  } catch (error) {
+    console.error('搜索店铺信息失败：', error)
+    message.error('搜索失败，请手动填写')
+  } finally {
+    autoFilling.value = false
+  }
 }
 
 // 显示弹窗

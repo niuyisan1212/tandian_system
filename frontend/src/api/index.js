@@ -4,6 +4,15 @@ import request from './request'
  * 店铺相关API
  */
 
+// 搜索店铺信息（根据名称自动填充）
+export function searchShopInfo(name, city) {
+  return request({
+    url: '/shops/search',
+    method: 'get',
+    params: { name, city }
+  })
+}
+
 // 获取店铺列表（分页）
 export function getShopList(params) {
   return request({

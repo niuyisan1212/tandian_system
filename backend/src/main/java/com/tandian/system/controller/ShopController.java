@@ -46,6 +46,26 @@ public class ShopController {
     @Resource
     private AmapService amapService;
 
+    /**
+     * 根据店铺名称搜索店铺信息（地址、电话、营业时间等）
+     */
+    @GetMapping("/search")
+    public Result<Map<String, Object>> searchShopInfo(
+            @RequestParam String name,
+            @RequestParam(required = false, defaultValue = "四川省") String city) {
+        log.info("【接口调用】搜索店铺信息：{}", name);
+        try {
+            Map<String, Object> result = amapService.searchPOI(name, city);
+            if (result != null) {
+                return Result.success(result);
+            }
+            return Result.error("未找到该店铺信息");
+        } catch (Exception e) {
+            log.error("搜索店铺信息失败", e);
+            return Result.error("搜索失败：" + e.getMessage());
+        }
+    }
+
     @PostMapping
     public Result<ShopVO> create(@Validated @RequestBody ShopDTO dto) {
         log.info("【接口调用】创建店铺：{}", dto.getName());
