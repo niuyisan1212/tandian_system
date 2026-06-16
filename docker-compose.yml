@@ -46,7 +46,6 @@ services:
       - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=niuhaoqing1212
-      - MYSQL_DATABASE=tandian_system
       - TZ=Asia/Shanghai
     volumes:
       - td-mysql-data:/var/lib/mysql

@@ -1,5 +1,6 @@
 # ============================================
 # 探店路线规划系统 - 自动部署工作流
+# 部署流程：备份 → 拉代码 → 构建 → 恢复
 # ============================================
 
 name: Auto Deploy
@@ -23,7 +24,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
             echo "=========================================="
             echo "  开始自动部署 - $(date '+%Y-%m-%d %H:%M:%S')"
@@ -35,29 +36,64 @@ jobs:
             # 显示当前版本
             echo "当前版本: $(git rev-parse --short HEAD)"
             
-            # 拉取最新代码
+            # ==================== 步骤1: 备份数据库 ====================
             echo ""
-            echo "[1/4] 拉取最新代码..."
+            echo "[1/5] 备份数据库..."
+            
+            BACKUP_DIR="./backups"
+            mkdir -p $BACKUP_DIR
+            BACKUP_FILE="$BACKUP_DIR/tandian_$(date '+%Y%m%d_%H%M%S').sql"
+            
+            # 检查 MySQL 容器是否在运行
+            if docker ps --format '{{.Names}}' | grep -q '^td-mysql$'; then
+              echo "MySQL 容器运行中，开始备份..."
+              docker exec td-mysql mysqldump -uroot -pniuhaoqing1212 tandian_system > "$BACKUP_FILE" 2>/dev/null
+              if [ -s "$BACKUP_FILE" ]; then
+                echo "备份成功: $BACKUP_FILE ($(du -h $BACKUP_FILE | cut -f1))"
+              else
+                echo "备份失败，继续部署（可能是首次部署无数据）"
+                rm -f "$BACKUP_FILE"
+              fi
+            else
+              echo "MySQL 容器未运行，跳过备份（可能是首次部署）"
+            fi
+            
+            # 只保留最近 5 个备份
+            cd $BACKUP_DIR && ls -t tandian_*.sql 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null; cd -
+            
+            # ==================== 步骤2: 拉取最新代码 ====================
+            echo ""
+            echo "[2/5] 拉取最新代码..."
             git fetch origin
             git reset --hard origin/main
             git pull origin main
-            
-            # 显示新版本
             echo "新版本: $(git rev-parse --short HEAD)"
             
-            # 重新构建并启动（不删除数据卷，保留数据库）
+            # ==================== 步骤3: 构建并启动 ====================
             echo ""
-            echo "[2/4] 重新构建并启动服务..."
+            echo "[3/5] 构建并启动服务..."
             docker compose up -d --build
             
-            # 等待服务启动
+            # ==================== 步骤4: 等待并恢复数据 ====================
             echo ""
-            echo "[3/4] 等待服务启动..."
+            echo "[4/5] 等待服务启动..."
             sleep 30
             
-            # 检查服务状态
+            # 检查数据库是否为空，为空则恢复备份
+            if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+              TABLE_COUNT=$(docker exec td-mysql mysql -uroot -pniuhaoqing1212 -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='tandian_system'" -s -N 2>/dev/null || echo "0")
+              if [ "$TABLE_COUNT" = "0" ] || [ "$TABLE_COUNT" = "" ]; then
+                echo "数据库为空，从备份恢复..."
+                docker exec -i td-mysql mysql -uroot -pniuhaoqing1212 tandian_system < "$BACKUP_FILE" 2>/dev/null
+                echo "数据恢复完成"
+              else
+                echo "数据库已有数据（$TABLE_COUNT 张表），跳过恢复"
+              fi
+            fi
+            
+            # ==================== 步骤5: 检查状态 ====================
             echo ""
-            echo "[4/4] 检查服务状态..."
+            echo "[5/5] 检查服务状态..."
             docker compose ps
             
             # 清理旧镜像
