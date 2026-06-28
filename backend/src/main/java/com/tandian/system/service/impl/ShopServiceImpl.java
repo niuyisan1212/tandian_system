@@ -14,6 +14,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,8 +89,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
-    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword) {
-        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}", pageNum, pageSize, visitStatus, category, keyword);
+    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid) {
+        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}", pageNum, pageSize, visitStatus, category, keyword, isValid);
         
         Page<Shop> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
@@ -111,8 +112,26 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                     .like(Shop::getAddress, keyword));
         }
         
-        // 按创建时间倒序
-        wrapper.orderByDesc(Shop::getCreatedAt);
+        // 生效状态筛选：1=生效中（未过期且未探店），0=已失效
+        if (isValid != null) {
+            LocalDate today = LocalDate.now();
+            if (isValid == 1) {
+                // 生效中：未探店 + (未设过期时间 或 过期时间 > 今天)
+                wrapper.eq(Shop::getVisitStatus, 0)
+                        .and(w -> w.isNull(Shop::getExpireTime)
+                                .or()
+                                .gt(Shop::getExpireTime, today));
+            } else if (isValid == 0) {
+                // 已失效：已探店 或 (过期时间不为空 且 过期时间 <= 今天)
+                wrapper.and(w -> w.eq(Shop::getVisitStatus, 1)
+                        .or(w2 -> w2.isNotNull(Shop::getExpireTime)
+                                .le(Shop::getExpireTime, today)));
+            }
+        }
+        
+        // 排序：按过期时间升序（快过期的排前面），无过期时间的排最后，然后按创建时间倒序
+        wrapper.orderByAsc(Shop::getExpireTime)
+                .orderByDesc(Shop::getCreatedAt);
         
         Page<Shop> shopPage = this.page(page, wrapper);
         
@@ -130,11 +149,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     public List<ShopVO> getValidShops() {
         log.info("获取所有有效待探店店铺");
         
+        LocalDate today = LocalDate.now();
         LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Shop::getVisitStatus, 0)
                 .and(w -> w.isNull(Shop::getExpireTime)
                         .or()
-                        .gt(Shop::getExpireTime, LocalDateTime.now()))
+                        .gt(Shop::getExpireTime, today))
+                .orderByAsc(Shop::getExpireTime)
                 .orderByDesc(Shop::getCreatedAt);
         
         List<Shop> shops = this.list(wrapper);

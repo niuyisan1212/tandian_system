@@ -62,6 +62,20 @@
           <span>✅ 已探店</span>
         </a-select-option>
       </a-select>
+      <a-select
+        v-model:value="filterIsValid"
+        placeholder="生效状态"
+        style="width: 150px; margin-left: 16px"
+        allowClear
+        @change="handleSearch"
+      >
+        <a-select-option :value="1">
+          <span>🟢 生效中</span>
+        </a-select-option>
+        <a-select-option :value="0">
+          <span>⚫ 已失效</span>
+        </a-select-option>
+      </a-select>
     </div>
 
     <!-- 店铺卡片列表 -->
@@ -229,6 +243,7 @@ const loading = ref(false)
 const searchKeyword = ref('')
 const filterCategory = ref(undefined)
 const filterStatus = ref(undefined)
+const filterIsValid = ref(1)
 const modalVisible = ref(false)
 const editingShop = ref(null)
 const formRef = ref()
@@ -268,7 +283,8 @@ const loadShops = async () => {
       pageSize: pagination.pageSize,
       keyword: searchKeyword.value,
       category: filterCategory.value,
-      visitStatus: filterStatus.value
+      visitStatus: filterStatus.value,
+      isValid: filterIsValid.value
     })
     
     shopList.value = res.data.records || []
@@ -440,7 +456,8 @@ const handleExport = async () => {
     message.loading({ content: '正在导出...', key: 'export' })
     const res = await exportShops({
       keyword: searchKeyword.value,
-      visitStatus: filterStatus.value
+      visitStatus: filterStatus.value,
+      isValid: filterIsValid.value
     })
     
     // 创建下载链接

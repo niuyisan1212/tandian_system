@@ -119,9 +119,10 @@ public class ShopController {
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) Integer visitStatus,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String keyword) {
-        log.info("【接口调用】分页查询店铺列表");
-        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer isValid) {
+        log.info("【接口调用】分页查询店铺列表，isValid：{}", isValid);
+        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid);
         return Result.success(page);
     }
 
@@ -154,11 +155,12 @@ public class ShopController {
             @RequestParam(required = false) Integer visitStatus,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer isValid,
             HttpServletResponse response) {
         log.info("【接口调用】导出店铺列表");
         try {
             // 获取所有店铺（不分页）
-            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword);
+            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid);
             List<ShopVO> shops = page.getRecords();
 
             // 创建Excel写入器
