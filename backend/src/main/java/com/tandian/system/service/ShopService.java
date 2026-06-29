@@ -39,7 +39,7 @@ public interface ShopService extends IService<Shop> {
     /**
      * 分页查询店铺列表
      */
-    Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd);
+    Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd, Integer availableCount);
 
     /**
      * 获取所有有效待探店店铺
@@ -55,4 +55,14 @@ public interface ShopService extends IService<Shop> {
      * 批量标记店铺为已探店
      */
     void batchMarkAsVisited(List<Long> ids);
+
+    /**
+     * 获取生效店铺的可用人总数
+     */
+    int getTotalAvailableCount();
+
+    /**
+     * 获取数据库中已有的可用人数选项（去重排序）
+     */
+    List<Integer> getAvailableCountOptions();
 }

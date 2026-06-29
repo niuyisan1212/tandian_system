@@ -30,6 +30,14 @@ export function getValidShops() {
   })
 }
 
+// 获取可用人数选项（从数据库获取去重值）
+export function getAvailableCountOptions() {
+  return request({
+    url: '/shops/available-count-options',
+    method: 'get'
+  })
+}
+
 // 获取店铺详情
 export function getShopById(id) {
   return request({

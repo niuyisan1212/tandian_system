@@ -36,6 +36,11 @@
               />
             </a-col>
           </a-row>
+          <a-row :gutter="16" style="margin-top: 16px">
+            <a-col :span="24">
+              <a-statistic title="可用人总数" :value="statistics.totalAvailableCount" suffix="人" />
+            </a-col>
+          </a-row>
         </a-card>
 
         <a-card 
@@ -87,7 +92,8 @@ const statistics = ref({
   totalShops: 0,
   validShops: 0,
   visitedShops: 0,
-  completionRate: 0
+  completionRate: 0,
+  totalAvailableCount: 0
 })
 
 const lists = ref([])

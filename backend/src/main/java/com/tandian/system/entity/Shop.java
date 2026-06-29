@@ -56,6 +56,9 @@ public class Shop implements Serializable {
     /** 过期时间（NULL表示永不过期） */
     private LocalDate expireTime;
 
+    /** 可用人人数（默认1人） */
+    private Integer availableCount = 1;
+
     /** 创建时间 */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

@@ -122,9 +122,10 @@ public class ShopController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer isValid,
             @RequestParam(required = false) String expireTimeStart,
-            @RequestParam(required = false) String expireTimeEnd) {
-        log.info("【接口调用】分页查询店铺列表，isValid：{}，过期时间范围：{} ~ {}", isValid, expireTimeStart, expireTimeEnd);
-        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
+            @RequestParam(required = false) String expireTimeEnd,
+            @RequestParam(required = false) Integer availableCount) {
+        log.info("【接口调用】分页查询店铺列表，isValid：{}，过期时间范围：{} ~ {}，可用人数：{}", isValid, expireTimeStart, expireTimeEnd, availableCount);
+        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
         return Result.success(page);
     }
 
@@ -134,6 +135,14 @@ public class ShopController {
         log.info("【接口调用】获取所有有效待探店店铺");
         List<ShopVO> list = shopService.getValidShops();
         return Result.success(list);
+    }
+
+    @GetMapping("/available-count-options")
+
+    public Result<List<Integer>> getAvailableCountOptions() {
+        log.info("【接口调用】获取可用人数选项");
+        List<Integer> options = shopService.getAvailableCountOptions();
+        return Result.success(options);
     }
 
     @PutMapping("/{id}/visit")
@@ -160,11 +169,12 @@ public class ShopController {
             @RequestParam(required = false) Integer isValid,
             @RequestParam(required = false) String expireTimeStart,
             @RequestParam(required = false) String expireTimeEnd,
+            @RequestParam(required = false) Integer availableCount,
             HttpServletResponse response) {
         log.info("【接口调用】导出店铺列表");
         try {
             // 获取所有店铺（不分页）
-            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
+            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
             List<ShopVO> shops = page.getRecords();
 
             // 创建Excel写入器
@@ -182,6 +192,7 @@ public class ShopController {
             writer.addHeaderAlias("visitStatusText", "探店状态");
             writer.addHeaderAlias("isValidText", "有效性");
             writer.addHeaderAlias("remark", "备注");
+            writer.addHeaderAlias("availableCount", "可用人人数");
             writer.addHeaderAlias("expireTime", "过期时间");
             writer.addHeaderAlias("createTime", "创建时间");
 
@@ -337,11 +348,25 @@ public class ShopController {
                             LocalDate date = localDateTime.toLocalDate();
                             dto.setExpireTime(date);
                         } catch (Exception e) {
-                            log.warn("【导入】第{}行：过期时间格式错误，应为 yyyy-MM-dd 格式", i + 1);
+                            // 尝试纯日期格式
+                            try {
+                                dto.setExpireTime(LocalDate.parse(row.get(7).toString().trim()));
+                            } catch (Exception e2) {
+                                log.warn("【导入】第{}行：过期时间格式错误", i + 1);
+                            }
                         }
                     }
                     
-                    dto.setRemark(row.size() > 8 && row.get(8) != null ? row.get(8).toString().trim() : null);
+                    // 解析可用人人数
+                    if (row.size() > 8 && row.get(8) != null) {
+                        try {
+                            dto.setAvailableCount(Integer.parseInt(row.get(8).toString().trim()));
+                        } catch (NumberFormatException e) {
+                            log.warn("【导入】第{}行：可用人人数格式错误", i + 1);
+                        }
+                    }
+                    
+                    dto.setRemark(row.size() > 9 && row.get(9) != null ? row.get(9).toString().trim() : null);
                     dto.setVisitStatus(0); // 默认未探店
 
                     shopService.createShop(dto);
@@ -392,6 +417,7 @@ public class ShopController {
             headers.add("联系电话");
             headers.add("营业时间");
             headers.add("过期时间");
+            headers.add("可用人人数");
             headers.add("备注");
 
             writer.writeHeadRow(headers);
@@ -407,6 +433,7 @@ public class ShopController {
             example1.add("010-12345678");
             example1.add("09:00-21:00");
             example1.add("2025-12-31");
+            example1.add(2);
             example1.add("这是一个示例店铺");
             exampleData.add(example1);
 

@@ -84,6 +84,17 @@
         @change="handleSearch"
         :placeholder="['过期开始', '过期结束']"
       />
+      <a-select
+        v-model:value="filterAvailableCount"
+        placeholder="可用人数"
+        style="width: 130px; margin-left: 16px"
+        allowClear
+        @change="handleSearch"
+      >
+        <a-select-option v-for="count in availableCountOptions" :key="count" :value="count">
+          {{ count }} 人
+        </a-select-option>
+      </a-select>
     </div>
 
     <!-- 店铺卡片列表 -->
@@ -112,6 +123,9 @@
                     </span>
                     <span v-if="isExpiringSoon(shop.expireTime) && !isExpired(shop.expireTime)" class="warning-badge">即将过期</span>
                     <span v-if="isExpired(shop.expireTime)" class="danger-badge">已过期</span>
+                  </div>
+                  <div class="info-item">
+                    <TeamOutlined /> 可用 {{ shop.availableCount || 1 }} 人
                   </div>
                   <div class="status-tags">
                     <a-tag :color="getCategoryColor(shop.category)">
@@ -235,6 +249,16 @@
           />
         </a-form-item>
 
+        <a-form-item label="👥 可用人人数" name="availableCount">
+          <a-input-number
+            v-model:value="formData.availableCount"
+            style="width: 100%"
+            placeholder="输入可用人人数（留空表示不限）"
+            :min="1"
+            :max="99"
+          />
+        </a-form-item>
+
         <a-form-item label="🎯 探店状态" name="visitStatus">
           <a-radio-group v-model:value="formData.visitStatus">
             <a-radio :value="0">⏳ 未探店</a-radio>
@@ -249,8 +273,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
-import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo } from '@/api'
+import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined, ClockCircleOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo, getAvailableCountOptions } from '@/api'
 import LocationPicker from '@/components/LocationPicker.vue'
 import dayjs from 'dayjs'
 
@@ -261,6 +285,8 @@ const filterCategory = ref(undefined)
 const filterStatus = ref(undefined)
 const filterIsValid = ref(1)
 const filterExpireRange = ref(null)
+const filterAvailableCount = ref(undefined)
+const availableCountOptions = ref([])
 const modalVisible = ref(false)
 const editingShop = ref(null)
 const formRef = ref()
@@ -283,7 +309,8 @@ const formData = reactive({
   businessHours: '',
   remark: '',
   visitStatus: 0,
-  expireTime: null
+  expireTime: null,
+  availableCount: 1
 })
 
 const rules = {
@@ -303,7 +330,8 @@ const loadShops = async () => {
       visitStatus: filterStatus.value,
       isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
       expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
-      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD')
+      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD'),
+      availableCount: filterAvailableCount.value
     })
     
     shopList.value = res.data.records || []
@@ -396,7 +424,8 @@ const showModal = (shop = null) => {
       businessHours: shop.businessHours || '',
       remark: shop.remark || '',
       visitStatus: shop.visitStatus,
-      expireTime: shop.expireTime ? dayjs(shop.expireTime) : null
+      expireTime: shop.expireTime ? dayjs(shop.expireTime) : null,
+      availableCount: shop.availableCount || null
     })
   } else {
     Object.assign(formData, {
@@ -409,7 +438,8 @@ const showModal = (shop = null) => {
       businessHours: '',
       remark: '',
       visitStatus: 0,
-      expireTime: null
+      expireTime: null,
+      availableCount: 1
     })
   }
   
@@ -478,7 +508,8 @@ const handleExport = async () => {
       visitStatus: filterStatus.value,
       isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
       expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
-      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD')
+      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD'),
+      availableCount: filterAvailableCount.value
     })
     
     // 创建下载链接
@@ -572,8 +603,19 @@ const isExpired = (expireTime) => {
   return dayjs(expireTime).isBefore(dayjs(), 'day')
 }
 
+// 加载可用人数选项
+const loadAvailableCountOptions = async () => {
+  try {
+    const res = await getAvailableCountOptions()
+    availableCountOptions.value = res.data || []
+  } catch (error) {
+    console.error('加载可用人数选项失败：', error)
+  }
+}
+
 onMounted(() => {
   loadShops()
+  loadAvailableCountOptions()
 })
 </script>
 

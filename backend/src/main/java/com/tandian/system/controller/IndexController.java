@@ -55,6 +55,7 @@ public class IndexController {
         data.put("validShops", validShops);
         data.put("visitedShops", visitedShops);
         data.put("completionRate", totalShops > 0 ? (visitedShops * 100 / totalShops) : 0);
+        data.put("totalAvailableCount", shopService.getTotalAvailableCount());
         
         return Result.success(data);
     }

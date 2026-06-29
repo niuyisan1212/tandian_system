@@ -56,6 +56,9 @@ public class ShopVO implements Serializable {
     /** 过期时间 */
     private LocalDate expireTime;
 
+    /** 可用人人数 */
+    private Integer availableCount;
+
     /** 创建时间 */
     private LocalDateTime createdAt;
 
@@ -89,6 +92,7 @@ public class ShopVO implements Serializable {
         vo.setRemark(shop.getRemark());
         vo.setVisitStatus(shop.getVisitStatus());
         vo.setExpireTime(shop.getExpireTime());
+        vo.setAvailableCount(shop.getAvailableCount());
         vo.setCreatedAt(shop.getCreatedAt());
         vo.setUpdatedAt(shop.getUpdatedAt());
         

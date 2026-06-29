@@ -44,6 +44,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         if (shop.getVisitStatus() == null) {
             shop.setVisitStatus(0);
         }
+        if (shop.getAvailableCount() == null) {
+            shop.setAvailableCount(1);
+        }
         
         this.save(shop);
         log.info("店铺创建成功，ID：{}", shop.getId());
@@ -89,8 +92,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
-    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd) {
-        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}，过期范围：{}~{}", pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
+    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd, Integer availableCount) {
+        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}，过期范围：{}~{}，可用人数：{}", pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
         
         Page<Shop> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
@@ -145,6 +148,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             } catch (Exception e) {
                 log.warn("过期时间结束日期格式错误：{}", expireTimeEnd);
             }
+        }
+        
+        // 可用人数筛选
+        if (availableCount != null) {
+            wrapper.eq(Shop::getAvailableCount, availableCount);
         }
         
         // 排序：按过期时间升序（快过期的排前面），无过期时间的排最后，然后按创建时间倒序
@@ -210,5 +218,32 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             }
         }
         log.info("批量标记成功");
+    }
+
+    @Override
+    public int getTotalAvailableCount() {
+        LocalDate today = LocalDate.now();
+        LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
+        // 只统计生效中的店铺
+        wrapper.eq(Shop::getVisitStatus, 0)
+                .and(w -> w.isNull(Shop::getExpireTime)
+                        .or()
+                        .gt(Shop::getExpireTime, today))
+                .isNotNull(Shop::getAvailableCount);
+        
+        return this.list(wrapper).stream()
+                .mapToInt(shop -> shop.getAvailableCount() != null ? shop.getAvailableCount() : 1)
+                .sum();
+    }
+
+    @Override
+    public List<Integer> getAvailableCountOptions() {
+        log.info("获取可用人数选项");
+        LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(Shop::getAvailableCount)
+                .isNotNull(Shop::getAvailableCount)
+                .groupBy(Shop::getAvailableCount)
+                .orderByAsc(Shop::getAvailableCount);
+        return this.listObjs(wrapper, obj -> (Integer) obj);
     }
 }

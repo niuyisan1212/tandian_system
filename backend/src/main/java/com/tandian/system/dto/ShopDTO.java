@@ -57,4 +57,7 @@ public class ShopDTO implements Serializable {
     /** 过期时间 */
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private LocalDate expireTime;
+
+    /** 可用人人数 */
+    private Integer availableCount;
 }
