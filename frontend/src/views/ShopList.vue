@@ -66,9 +66,11 @@
         v-model:value="filterIsValid"
         placeholder="生效状态"
         style="width: 150px; margin-left: 16px"
-        allowClear
         @change="handleSearch"
       >
+        <a-select-option :value="2">
+          <span>📋 全部</span>
+        </a-select-option>
         <a-select-option :value="1">
           <span>🟢 生效中</span>
         </a-select-option>
@@ -76,6 +78,12 @@
           <span>⚫ 已失效</span>
         </a-select-option>
       </a-select>
+      <a-range-picker
+        v-model:value="filterExpireRange"
+        style="margin-left: 16px"
+        @change="handleSearch"
+        :placeholder="['过期开始', '过期结束']"
+      />
     </div>
 
     <!-- 店铺卡片列表 -->
@@ -96,6 +104,14 @@
                   </div>
                   <div class="info-item">
                     <PhoneOutlined /> {{ shop.phone || '未填写' }}
+                  </div>
+                  <div class="info-item" v-if="shop.expireTime">
+                    <ClockCircleOutlined />
+                    <span :class="{ 'expire-warning': isExpiringSoon(shop.expireTime), 'expire-danger': isExpired(shop.expireTime) }">
+                      {{ shop.expireTime }}
+                    </span>
+                    <span v-if="isExpiringSoon(shop.expireTime) && !isExpired(shop.expireTime)" class="warning-badge">即将过期</span>
+                    <span v-if="isExpired(shop.expireTime)" class="danger-badge">已过期</span>
                   </div>
                   <div class="status-tags">
                     <a-tag :color="getCategoryColor(shop.category)">
@@ -233,7 +249,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo } from '@/api'
 import LocationPicker from '@/components/LocationPicker.vue'
 import dayjs from 'dayjs'
@@ -244,6 +260,7 @@ const searchKeyword = ref('')
 const filterCategory = ref(undefined)
 const filterStatus = ref(undefined)
 const filterIsValid = ref(1)
+const filterExpireRange = ref(null)
 const modalVisible = ref(false)
 const editingShop = ref(null)
 const formRef = ref()
@@ -284,7 +301,9 @@ const loadShops = async () => {
       keyword: searchKeyword.value,
       category: filterCategory.value,
       visitStatus: filterStatus.value,
-      isValid: filterIsValid.value
+      isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
+      expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
+      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD')
     })
     
     shopList.value = res.data.records || []
@@ -457,7 +476,9 @@ const handleExport = async () => {
     const res = await exportShops({
       keyword: searchKeyword.value,
       visitStatus: filterStatus.value,
-      isValid: filterIsValid.value
+      isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
+      expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
+      expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD')
     })
     
     // 创建下载链接
@@ -534,6 +555,21 @@ const getCategoryEmoji = (category) => {
     '其他': '📌'
   }
   return emojis[category] || '📌'
+}
+
+// 判断是否7天内即将过期
+const isExpiringSoon = (expireTime) => {
+  if (!expireTime) return false
+  const expire = dayjs(expireTime)
+  const now = dayjs()
+  const diff = expire.diff(now, 'day')
+  return diff >= 0 && diff <= 7
+}
+
+// 判断是否已过期
+const isExpired = (expireTime) => {
+  if (!expireTime) return false
+  return dayjs(expireTime).isBefore(dayjs(), 'day')
 }
 
 onMounted(() => {
@@ -657,5 +693,38 @@ onMounted(() => {
 .cute-modal :deep(.ant-modal-title) {
   font-weight: bold;
   color: #ff6b9d;
+}
+
+.expire-warning {
+  color: #fa8c16;
+  font-weight: 600;
+}
+
+.expire-danger {
+  color: #ff4d4f;
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.warning-badge {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #fa8c16;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+.danger-badge {
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  color: #ff4d4f;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+  font-weight: 600;
 }
 </style>

@@ -39,7 +39,7 @@ public interface ShopService extends IService<Shop> {
     /**
      * 分页查询店铺列表
      */
-    Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid);
+    Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd);
 
     /**
      * 获取所有有效待探店店铺

@@ -89,8 +89,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
-    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid) {
-        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}", pageNum, pageSize, visitStatus, category, keyword, isValid);
+    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd) {
+        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}，过期范围：{}~{}", pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
         
         Page<Shop> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
@@ -126,6 +126,24 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 wrapper.and(w -> w.eq(Shop::getVisitStatus, 1)
                         .or(w2 -> w2.isNotNull(Shop::getExpireTime)
                                 .le(Shop::getExpireTime, today)));
+            }
+        }
+        
+        // 过期时间范围筛选
+        if (StrUtil.isNotBlank(expireTimeStart)) {
+            try {
+                LocalDate startDate = LocalDate.parse(expireTimeStart);
+                wrapper.ge(Shop::getExpireTime, startDate);
+            } catch (Exception e) {
+                log.warn("过期时间开始日期格式错误：{}", expireTimeStart);
+            }
+        }
+        if (StrUtil.isNotBlank(expireTimeEnd)) {
+            try {
+                LocalDate endDate = LocalDate.parse(expireTimeEnd);
+                wrapper.le(Shop::getExpireTime, endDate);
+            } catch (Exception e) {
+                log.warn("过期时间结束日期格式错误：{}", expireTimeEnd);
             }
         }
         

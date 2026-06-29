@@ -120,9 +120,11 @@ public class ShopController {
             @RequestParam(required = false) Integer visitStatus,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer isValid) {
-        log.info("【接口调用】分页查询店铺列表，isValid：{}", isValid);
-        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid);
+            @RequestParam(required = false) Integer isValid,
+            @RequestParam(required = false) String expireTimeStart,
+            @RequestParam(required = false) String expireTimeEnd) {
+        log.info("【接口调用】分页查询店铺列表，isValid：{}，过期时间范围：{} ~ {}", isValid, expireTimeStart, expireTimeEnd);
+        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
         return Result.success(page);
     }
 
@@ -156,11 +158,13 @@ public class ShopController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer isValid,
+            @RequestParam(required = false) String expireTimeStart,
+            @RequestParam(required = false) String expireTimeEnd,
             HttpServletResponse response) {
         log.info("【接口调用】导出店铺列表");
         try {
             // 获取所有店铺（不分页）
-            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid);
+            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd);
             List<ShopVO> shops = page.getRecords();
 
             // 创建Excel写入器
