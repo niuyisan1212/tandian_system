@@ -28,7 +28,7 @@ WORKDIR /app
 
 # 复制 pom.xml 先下载依赖（利用 Docker 缓存）
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:resolve -B
 
 # 复制源代码并构建
 COPY src ./src
