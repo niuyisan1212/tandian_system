@@ -71,7 +71,7 @@ npm run dev
 - **数据库名**: tandian_system
 - **地址**: localhost:3306
 - **用户名**: root
-- **密码**: niuhaoqing1212
+- **密码**: ******
 
 ### 初始化数据库
 ```bash
