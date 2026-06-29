@@ -72,8 +72,21 @@ jobs:
             
             # ==================== 步骤3: 构建并启动 ====================
             echo ""
-            echo "[3/5] 构建并启动服务..."
-            docker compose up -d --build
+            echo "[3/5] 构建并启动服务（串行构建，避免内存溢出）..."
+            
+            # 先停止旧容器，释放内存
+            docker compose down || true
+            
+            # 串行构建：先 backend（Maven 最吃内存），再 frontend（npm build）
+            echo "构建后端..."
+            docker compose build backend
+            
+            echo "构建前端..."
+            docker compose build frontend
+            
+            # 启动所有服务
+            echo "启动所有服务..."
+            docker compose up -d
             
             # ==================== 步骤4: 等待并恢复数据 ====================
             echo ""

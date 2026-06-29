@@ -18,7 +18,8 @@ RUN npm install --registry=https://registry.npmmirror.com
 # 复制源代码
 COPY . .
 
-# 构建生产版本
+# 构建生产版本（限制 Node 内存为 512M）
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN npm run build
 
 # 阶段2: 生产阶段

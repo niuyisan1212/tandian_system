@@ -118,8 +118,17 @@ main() {
     if [ "$SKIP_BUILD" = true ]; then
         log_info "代码未更新，跳过构建"
     else
-        log_info "构建并启动容器..."
-        docker compose up -d --build
+        log_info "停止旧容器，释放内存..."
+        docker compose down || true
+        
+        log_info "串行构建：先构建后端..."
+        docker compose build backend
+        
+        log_info "串行构建：再构建前端..."
+        docker compose build frontend
+        
+        log_info "启动所有服务..."
+        docker compose up -d
     fi
 
     # ==================== 步骤4: 等待并恢复数据 ====================

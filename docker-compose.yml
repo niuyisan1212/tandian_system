@@ -32,11 +32,16 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://td-mysql:3306/tandian_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=niuhaoqing1212
+      - JAVA_OPTS=-Xms128m -Xmx256m -XX:+UseG1GC
     depends_on:
       - mysql
     networks:
       - td-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # MySQL 数据库
   mysql:
@@ -49,10 +54,14 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - td-mysql-data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=128M --max-connections=30
     networks:
       - td-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 networks:
   td-network:

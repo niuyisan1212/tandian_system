@@ -6,6 +6,9 @@
 # 阶段1: 构建阶段
 FROM maven:3.8-openjdk-8-slim AS builder
 
+# 限制 Maven 构建内存
+ENV MAVEN_OPTS="-Xms128m -Xmx384m"
+
 # 设置工作目录
 WORKDIR /app
 
@@ -15,7 +18,7 @@ RUN mvn dependency:go-offline -B
 
 # 复制源代码并构建
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B -T 1C
 
 # 阶段2: 运行阶段
 FROM openjdk:8-jre-alpine
@@ -36,8 +39,8 @@ COPY --from=builder /app/target/*.jar app.jar
 # 暴露端口
 EXPOSE 8080
 
-# JVM 参数
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+# JVM 参数（运行阶段）
+ENV JAVA_OPTS="-Xms128m -Xmx256m -XX:+UseG1GC"
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
