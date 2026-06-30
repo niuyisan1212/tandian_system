@@ -122,10 +122,10 @@ main() {
         docker compose down || true
         
         log_info "串行构建：先构建后端..."
-        docker compose build backend
+        docker compose build --no-cache backend
         
         log_info "串行构建：再构建前端..."
-        docker compose build frontend
+        docker compose build --no-cache frontend
         
         log_info "启动所有服务..."
         docker compose up -d

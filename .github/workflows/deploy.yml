@@ -9,7 +9,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -29,10 +29,8 @@ jobs:
             echo "  开始自动部署 - $(date '+%Y-%m-%d %H:%M:%S')"
             echo "=========================================="
             
-            # 进入项目目录
             cd /home/website/tandian
             
-            # 显示当前版本
             echo "当前版本: $(git rev-parse --short HEAD)"
             
             # ==================== 步骤1: 备份数据库 ====================
@@ -43,21 +41,21 @@ jobs:
             mkdir -p $BACKUP_DIR
             BACKUP_FILE="$BACKUP_DIR/tandian_$(date '+%Y%m%d_%H%M%S').sql"
             
-            # 检查 MySQL 容器是否在运行
             if docker ps --format '{{.Names}}' | grep -q '^td-mysql$'; then
               echo "MySQL 容器运行中，开始备份..."
               docker exec td-mysql mysqldump -uroot -pniuhaoqing1212 tandian_system > "$BACKUP_FILE" 2>/dev/null
               if [ -s "$BACKUP_FILE" ]; then
                 echo "备份成功: $BACKUP_FILE ($(du -h $BACKUP_FILE | cut -f1))"
               else
-                echo "备份失败，继续部署（可能是首次部署无数据）"
+                echo "备份失败，继续部署"
                 rm -f "$BACKUP_FILE"
+                BACKUP_FILE=""
               fi
             else
-              echo "MySQL 容器未运行，跳过备份（可能是首次部署）"
+              echo "MySQL 容器未运行，跳过备份"
+              BACKUP_FILE=""
             fi
             
-            # 只保留最近 5 个备份
             cd $BACKUP_DIR && ls -t tandian_*.sql 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null; cd -
             
             # ==================== 步骤2: 拉取最新代码 ====================
@@ -65,26 +63,22 @@ jobs:
             echo "[2/5] 拉取最新代码..."
             git fetch origin
             git reset --hard origin/master
-            git pull origin master
             
-            # 显示新版本
             echo "新版本: $(git rev-parse --short HEAD)"
             
             # ==================== 步骤3: 构建并启动 ====================
             echo ""
-            echo "[3/5] 构建并启动服务（串行构建，避免内存溢出）..."
+            echo "[3/5] 构建并启动服务..."
             
-            # 先停止旧容器，释放内存
             docker compose down || true
             
-            # 串行构建：先 backend（Maven 最吃内存），再 frontend（npm build）
+            # --no-cache 强制全量重建，避免 Docker 缓存导致部署旧代码
             echo "构建后端..."
-            docker compose build backend
+            docker compose build --no-cache backend
             
             echo "构建前端..."
-            docker compose build frontend
+            docker compose build --no-cache frontend
             
-            # 启动所有服务
             echo "启动所有服务..."
             docker compose up -d
             
@@ -93,8 +87,7 @@ jobs:
             echo "[4/5] 等待服务启动..."
             sleep 30
             
-            # 检查数据库是否为空，为空则恢复备份
-            if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+            if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
               TABLE_COUNT=$(docker exec td-mysql mysql -uroot -pniuhaoqing1212 -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='tandian_system'" -s -N 2>/dev/null || echo "0")
               if [ "$TABLE_COUNT" = "0" ] || [ "$TABLE_COUNT" = "" ]; then
                 echo "数据库为空，从备份恢复..."
@@ -110,7 +103,6 @@ jobs:
             echo "[5/5] 检查服务状态..."
             docker compose ps
             
-            # 清理旧镜像
             echo ""
             echo "清理旧镜像..."
             docker image prune -f
