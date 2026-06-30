@@ -34,8 +34,8 @@ RUN mvn dependency:resolve -B
 COPY src ./src
 RUN mvn clean package -DskipTests -B -T 1C
 
-# 阶段2: 运行阶段
-FROM openjdk:8-jre-alpine
+# 阶段2: 运行阶段（使用 eclipse-temurin 替代已下架的 openjdk）
+FROM eclipse-temurin:8-jre-alpine
 
 # 作者信息
 LABEL maintainer="nhq"
