@@ -204,3 +204,69 @@ export function getStatistics() {
     method: 'get'
   })
 }
+
+/**
+ * 定时任务相关API
+ */
+
+// 获取定时任务列表
+export function getScheduledTasks() {
+  return request({
+    url: '/scheduled-tasks',
+    method: 'get'
+  })
+}
+
+// 获取定时任务详情
+export function getScheduledTaskById(id) {
+  return request({
+    url: `/scheduled-tasks/${id}`,
+    method: 'get'
+  })
+}
+
+// 更新定时任务
+export function updateScheduledTask(id, data) {
+  return request({
+    url: `/scheduled-tasks/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 启用/禁用定时任务
+export function toggleScheduledTask(id) {
+  return request({
+    url: `/scheduled-tasks/${id}/toggle`,
+    method: 'put'
+  })
+}
+
+// 手动触发定时任务
+export function triggerScheduledTask(id) {
+  return request({
+    url: `/scheduled-tasks/${id}/trigger`,
+    method: 'post'
+  })
+}
+
+/**
+ * 系统配置相关API
+ */
+
+// 获取系统配置
+export function getSystemConfig() {
+  return request({
+    url: '/system-config',
+    method: 'get'
+  })
+}
+
+// 批量更新系统配置
+export function updateSystemConfig(data) {
+  return request({
+    url: '/system-config',
+    method: 'put',
+    data
+  })
+}

@@ -25,6 +25,20 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  # 邮件配置（默认QQ邮箱，实际配置在数据库定时任务表中）
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: placeholder@qq.com
+    password: placeholder
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 # MyBatis Plus配置
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml

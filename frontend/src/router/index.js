@@ -30,6 +30,12 @@ const routes = [
     name: 'Guide',
     component: () => import('@/views/Guide.vue'),
     meta: { title: '0元探店操作手册' }
+  },
+  {
+    path: '/tasks',
+    name: 'Tasks',
+    component: () => import('@/views/TaskManager.vue'),
+    meta: { title: '定时任务管理' }
   }
 ]
 
