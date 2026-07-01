@@ -85,9 +85,20 @@
         :placeholder="['过期开始', '过期结束']"
       />
       <a-select
+        v-model:value="filterAvailableCountOp"
+        placeholder="条件"
+        style="width: 100px; margin-left: 16px"
+      >
+        <a-select-option value="gt">大于</a-select-option>
+        <a-select-option value="gte">大于等于</a-select-option>
+        <a-select-option value="eq">等于</a-select-option>
+        <a-select-option value="lt">小于</a-select-option>
+        <a-select-option value="lte">小于等于</a-select-option>
+      </a-select>
+      <a-select
         v-model:value="filterAvailableCount"
         placeholder="可用人数"
-        style="width: 130px; margin-left: 16px"
+        style="width: 130px; margin-left: 8px"
         allowClear
         @change="handleSearch"
       >
@@ -126,6 +137,9 @@
                   </div>
                   <div class="info-item">
                     <TeamOutlined /> 可用 {{ shop.availableCount || 1 }} 人
+                  </div>
+                  <div class="info-item" v-if="shop.explorers && shop.explorers.length > 0">
+                    <UserOutlined /> {{ shop.explorers.map(e => e.phone ? e.name + '(' + e.phone + ')' : e.name).join(', ') }}
                   </div>
                   <div class="status-tags">
                     <a-tag :color="getCategoryColor(shop.category)">
@@ -259,6 +273,18 @@
           />
         </a-form-item>
 
+        <a-form-item label="🧑‍🍳 探店员" name="explorerIds">
+          <a-select
+            v-model:value="formData.explorerIds"
+            mode="multiple"
+            placeholder="选择探店员"
+            style="width: 100%"
+            :options="explorerOptions"
+            :filter-option="filterExplorerOption"
+            allowClear
+          />
+        </a-form-item>
+
         <a-form-item label="🎯 探店状态" name="visitStatus">
           <a-radio-group v-model:value="formData.visitStatus">
             <a-radio :value="0">⏳ 未探店</a-radio>
@@ -273,8 +299,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined, ClockCircleOutlined, TeamOutlined } from '@ant-design/icons-vue'
-import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo, getAvailableCountOptions } from '@/api'
+import { PlusOutlined, EnvironmentOutlined, PhoneOutlined, UploadOutlined, ExportOutlined, DownloadOutlined, ClockCircleOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons-vue'
+import { getShopList, createShop, updateShop, deleteShop, exportShops, importShops, downloadTemplate, searchShopInfo, getAvailableCountOptions, getExplorerList } from '@/api'
 import LocationPicker from '@/components/LocationPicker.vue'
 import dayjs from 'dayjs'
 
@@ -286,12 +312,14 @@ const filterStatus = ref(undefined)
 const filterIsValid = ref(1)
 const filterExpireRange = ref(null)
 const filterAvailableCount = ref(undefined)
+const filterAvailableCountOp = ref('eq')
 const availableCountOptions = ref([])
 const modalVisible = ref(false)
 const editingShop = ref(null)
 const formRef = ref()
 const locationPicker = ref()
 const autoFilling = ref(false)
+const explorerOptions = ref([])
 
 const pagination = reactive({
   current: 1,
@@ -310,7 +338,8 @@ const formData = reactive({
   remark: '',
   visitStatus: 0,
   expireTime: null,
-  availableCount: 1
+  availableCount: 1,
+  explorerIds: []
 })
 
 const rules = {
@@ -331,7 +360,8 @@ const loadShops = async () => {
       isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
       expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
       expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD'),
-      availableCount: filterAvailableCount.value
+      availableCount: filterAvailableCount.value,
+      availableCountOp: filterAvailableCount.value != null ? filterAvailableCountOp.value : undefined
     })
     
     shopList.value = res.data.records || []
@@ -425,7 +455,8 @@ const showModal = (shop = null) => {
       remark: shop.remark || '',
       visitStatus: shop.visitStatus,
       expireTime: shop.expireTime ? dayjs(shop.expireTime) : null,
-      availableCount: shop.availableCount || null
+      availableCount: shop.availableCount || null,
+      explorerIds: shop.explorers ? shop.explorers.map(e => e.id) : []
     })
   } else {
     Object.assign(formData, {
@@ -439,7 +470,8 @@ const showModal = (shop = null) => {
       remark: '',
       visitStatus: 0,
       expireTime: null,
-      availableCount: 1
+      availableCount: 1,
+      explorerIds: []
     })
   }
   
@@ -509,7 +541,8 @@ const handleExport = async () => {
       isValid: filterIsValid.value === 2 ? undefined : filterIsValid.value,
       expireTimeStart: filterExpireRange.value?.[0]?.format('YYYY-MM-DD'),
       expireTimeEnd: filterExpireRange.value?.[1]?.format('YYYY-MM-DD'),
-      availableCount: filterAvailableCount.value
+      availableCount: filterAvailableCount.value,
+      availableCountOp: filterAvailableCount.value != null ? filterAvailableCountOp.value : undefined
     })
     
     // 创建下载链接
@@ -613,9 +646,28 @@ const loadAvailableCountOptions = async () => {
   }
 }
 
+// 加载探店员选项
+const loadExplorerOptions = async () => {
+  try {
+    const res = await getExplorerList()
+    explorerOptions.value = (res.data || []).map(e => ({
+      label: e.phone ? `${e.name} (${e.phone})` : e.name,
+      value: e.id
+    }))
+  } catch (error) {
+    console.error('加载探店员选项失败：', error)
+  }
+}
+
+// 探店员选择框搜索过滤
+const filterExplorerOption = (input, option) => {
+  return option.label.toLowerCase().includes(input.toLowerCase())
+}
+
 onMounted(() => {
   loadShops()
   loadAvailableCountOptions()
+  loadExplorerOptions()
 })
 </script>
 

@@ -8,7 +8,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tandian.system.dto.ShopDTO;
 import com.tandian.system.entity.Shop;
 import com.tandian.system.service.AmapService;
+import com.tandian.system.service.ExplorerService;
 import com.tandian.system.service.ShopService;
+import com.tandian.system.vo.ExplorerVO;
 import com.tandian.system.vo.Result;
 import com.tandian.system.vo.ShopVO;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,9 @@ public class ShopController {
     
     @Resource
     private AmapService amapService;
+    
+    @Resource
+    private ExplorerService explorerService;
 
     /**
      * 根据店铺名称搜索店铺信息（地址、电话、营业时间等）
@@ -123,9 +128,10 @@ public class ShopController {
             @RequestParam(required = false) Integer isValid,
             @RequestParam(required = false) String expireTimeStart,
             @RequestParam(required = false) String expireTimeEnd,
-            @RequestParam(required = false) Integer availableCount) {
-        log.info("【接口调用】分页查询店铺列表，isValid：{}，过期时间范围：{} ~ {}，可用人数：{}", isValid, expireTimeStart, expireTimeEnd, availableCount);
-        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
+            @RequestParam(required = false) Integer availableCount,
+            @RequestParam(required = false) String availableCountOp) {
+        log.info("【接口调用】分页查询店铺列表，isValid：{}，过期时间范围：{} ~ {}，可用人数：{}{}", isValid, expireTimeStart, expireTimeEnd, availableCountOp, availableCount);
+        Page<ShopVO> page = shopService.getShopPage(pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount, availableCountOp);
         return Result.success(page);
     }
 
@@ -170,11 +176,12 @@ public class ShopController {
             @RequestParam(required = false) String expireTimeStart,
             @RequestParam(required = false) String expireTimeEnd,
             @RequestParam(required = false) Integer availableCount,
+            @RequestParam(required = false) String availableCountOp,
             HttpServletResponse response) {
         log.info("【接口调用】导出店铺列表");
         try {
             // 获取所有店铺（不分页）
-            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
+            Page<ShopVO> page = shopService.getShopPage(1, 10000, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount, availableCountOp);
             List<ShopVO> shops = page.getRecords();
 
             // 创建Excel写入器
@@ -194,9 +201,19 @@ public class ShopController {
             writer.addHeaderAlias("remark", "备注");
             writer.addHeaderAlias("availableCount", "可用人人数");
             writer.addHeaderAlias("expireTime", "过期时间");
+            writer.addHeaderAlias("explorerNames", "探店员");
             writer.addHeaderAlias("createTime", "创建时间");
 
-            // 写入数据
+            // 写入数据（先填充探店员名称字符串）
+            for (ShopVO vo : shops) {
+                if (vo.getExplorers() != null && !vo.getExplorers().isEmpty()) {
+                    vo.setExplorerNames(vo.getExplorers().stream()
+                            .map(e -> e.getPhone() != null && !e.getPhone().isEmpty()
+                                    ? e.getName() + "(" + e.getPhone() + ")"
+                                    : e.getName())
+                            .collect(java.util.stream.Collectors.joining(",")));
+                }
+            }
             writer.write(shops, true);
 
             // 设置响应头
@@ -366,7 +383,55 @@ public class ShopController {
                         }
                     }
                     
-                    dto.setRemark(row.size() > 9 && row.get(9) != null ? row.get(9).toString().trim() : null);
+                    // 解析探店员（列9：姓名用逗号分隔，手机号用括号标注，如"张三(13800138000),李四"）
+                    if (row.size() > 9 && row.get(9) != null) {
+                        String explorerStr = row.get(9).toString().trim();
+                        if (!explorerStr.isEmpty()) {
+                            List<Long> explorerIds = new ArrayList<>();
+                            String[] parts = explorerStr.split("[,，]"); // 支持中英文逗号
+                            for (String part : parts) {
+                                String trimmed = part.trim();
+                                if (trimmed.isEmpty()) continue;
+                                
+                                // 解析手机号：格式 "姓名(手机号)"
+                                String explorerName = trimmed;
+                                String explorerPhone = null;
+                                int phoneStart = trimmed.indexOf('(');
+                                if (phoneStart < 0) phoneStart = trimmed.indexOf('（');
+                                if (phoneStart >= 0) {
+                                    int phoneEnd = trimmed.indexOf(')', phoneStart);
+                                    if (phoneEnd < 0) phoneEnd = trimmed.indexOf('）', phoneStart);
+                                    if (phoneEnd > phoneStart) {
+                                        explorerPhone = trimmed.substring(phoneStart + 1, phoneEnd).trim();
+                                        explorerName = trimmed.substring(0, phoneStart).trim();
+                                    }
+                                }
+                                
+                                if (!explorerName.isEmpty()) {
+                                    // 精确匹配已有探店员
+                                    com.tandian.system.entity.Explorer explorer = explorerService.findByName(explorerName);
+                                    if (explorer == null) {
+                                        // 不存在则自动创建
+                                        explorer = new com.tandian.system.entity.Explorer();
+                                        explorer.setName(explorerName);
+                                        if (explorerPhone != null && !explorerPhone.isEmpty()) {
+                                            explorer.setPhone(explorerPhone);
+                                        }
+                                        explorerService.createExplorer(explorer);
+                                    } else if (explorerPhone != null && !explorerPhone.isEmpty()
+                                            && (explorer.getPhone() == null || explorer.getPhone().isEmpty())) {
+                                        // 已有探店员但手机号为空，则补充
+                                        explorer.setPhone(explorerPhone);
+                                        explorerService.updateExplorer(explorer.getId(), explorer);
+                                    }
+                                    explorerIds.add(explorer.getId());
+                                }
+                            }
+                            dto.setExplorerIds(explorerIds);
+                        }
+                    }
+                    
+                    dto.setRemark(row.size() > 10 && row.get(10) != null ? row.get(10).toString().trim() : null);
                     dto.setVisitStatus(0); // 默认未探店
 
                     shopService.createShop(dto);
@@ -418,6 +483,7 @@ public class ShopController {
             headers.add("营业时间");
             headers.add("过期时间");
             headers.add("可用人人数");
+            headers.add("探店员");
             headers.add("备注");
 
             writer.writeHeadRow(headers);
@@ -434,6 +500,7 @@ public class ShopController {
             example1.add("09:00-21:00");
             example1.add("2025-12-31");
             example1.add(2);
+            example1.add("张三(13800138000),李四");
             example1.add("这是一个示例店铺");
             exampleData.add(example1);
 

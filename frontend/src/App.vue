@@ -23,6 +23,10 @@
               <UnorderedListOutlined />
               探店清单
             </a-menu-item>
+            <a-menu-item key="explorers" @click="$router.push('/explorers')">
+              <TeamOutlined />
+              探店员
+            </a-menu-item>
             <a-menu-item key="guide" @click="$router.push('/guide')">
               <BookOutlined />
               <span class="menu-text">0元探店操作手册</span>
@@ -52,7 +56,8 @@ import {
   ShopOutlined, 
   UnorderedListOutlined,
   BookOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  TeamOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -68,6 +73,8 @@ watch(
       selectedKeys.value = ['shops']
     } else if (path.startsWith('/lists')) {
       selectedKeys.value = ['lists']
+    } else if (path.startsWith('/explorers')) {
+      selectedKeys.value = ['explorers']
     } else if (path.startsWith('/guide')) {
       selectedKeys.value = ['guide']
     } else if (path.startsWith('/tasks')) {

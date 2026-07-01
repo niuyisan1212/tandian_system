@@ -5,15 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tandian.system.dto.ShopDTO;
+import com.tandian.system.entity.Explorer;
 import com.tandian.system.entity.Shop;
 import com.tandian.system.mapper.ShopMapper;
+import com.tandian.system.service.ExplorerService;
 import com.tandian.system.service.ShopService;
+import com.tandian.system.vo.ExplorerVO;
 import com.tandian.system.vo.ShopVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +32,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements ShopService {
+
+    @Resource
+    private ExplorerService explorerService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -51,6 +58,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         this.save(shop);
         log.info("店铺创建成功，ID：{}", shop.getId());
         
+        // 关联探店员
+        if (dto.getExplorerIds() != null && !dto.getExplorerIds().isEmpty()) {
+            explorerService.setShopExplorers(shop.getId(), dto.getExplorerIds());
+        }
+        
         return ShopVO.fromEntity(shop);
     }
 
@@ -67,6 +79,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         BeanUtils.copyProperties(dto, shop, "id");
         this.updateById(shop);
         log.info("店铺更新成功");
+        
+        // 更新探店员关联
+        explorerService.setShopExplorers(id, dto.getExplorerIds());
         
         return ShopVO.fromEntity(shop);
     }
@@ -92,8 +107,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
     }
 
     @Override
-    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd, Integer availableCount) {
-        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}，过期范围：{}~{}，可用人数：{}", pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCount);
+    public Page<ShopVO> getShopPage(Integer pageNum, Integer pageSize, Integer visitStatus, String category, String keyword, Integer isValid, String expireTimeStart, String expireTimeEnd, Integer availableCount, String availableCountOp) {
+        log.info("分页查询店铺列表，页码：{}，大小：{}，状态：{}，类别：{}，关键词：{}，生效状态：{}，过期范围：{}~{}，可用人数：{}{}", pageNum, pageSize, visitStatus, category, keyword, isValid, expireTimeStart, expireTimeEnd, availableCountOp, availableCount);
         
         Page<Shop> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<Shop> wrapper = new LambdaQueryWrapper<>();
@@ -150,9 +165,16 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
             }
         }
         
-        // 可用人数筛选
+        // 可用人数筛选（支持比较运算符）
         if (availableCount != null) {
-            wrapper.eq(Shop::getAvailableCount, availableCount);
+            String op = availableCountOp != null ? availableCountOp : "eq";
+            switch (op) {
+                case "gt":  wrapper.gt(Shop::getAvailableCount, availableCount); break;
+                case "gte": wrapper.ge(Shop::getAvailableCount, availableCount); break;
+                case "lt":  wrapper.lt(Shop::getAvailableCount, availableCount); break;
+                case "lte": wrapper.le(Shop::getAvailableCount, availableCount); break;
+                default:    wrapper.eq(Shop::getAvailableCount, availableCount); break;
+            }
         }
         
         // 排序：按过期时间升序（快过期的排前面），无过期时间的排最后，然后按创建时间倒序
@@ -167,6 +189,9 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
         voPage.setRecords(shopPage.getRecords().stream()
                 .map(ShopVO::fromEntity)
                 .collect(Collectors.toList()));
+        
+        // 填充探店员
+        fillExplorers(voPage.getRecords());
         
         return voPage;
     }
@@ -185,9 +210,11 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 .orderByDesc(Shop::getCreatedAt);
         
         List<Shop> shops = this.list(wrapper);
-        return shops.stream()
+        List<ShopVO> voList = shops.stream()
                 .map(ShopVO::fromEntity)
                 .collect(Collectors.toList());
+        fillExplorers(voList);
+        return voList;
     }
 
     @Override
@@ -245,5 +272,15 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements Sh
                 .groupBy(Shop::getAvailableCount)
                 .orderByAsc(Shop::getAvailableCount);
         return this.listObjs(wrapper, obj -> (Integer) obj);
+    }
+
+    /** 填充店铺的探店员列表 */
+    private void fillExplorers(List<ShopVO> voList) {
+        for (ShopVO vo : voList) {
+            List<Explorer> explorers = explorerService.getExplorersByShopId(vo.getId());
+            vo.setExplorers(explorers.stream()
+                    .map(ExplorerVO::fromEntity)
+                    .collect(Collectors.toList()));
+        }
     }
 }

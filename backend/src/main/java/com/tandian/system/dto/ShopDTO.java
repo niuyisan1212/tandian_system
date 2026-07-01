@@ -7,7 +7,7 @@ import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 店铺创建/更新DTO
@@ -60,4 +60,7 @@ public class ShopDTO implements Serializable {
 
     /** 可用人人数 */
     private Integer availableCount;
+
+    /** 关联探店员ID列表 */
+    private List<Long> explorerIds;
 }

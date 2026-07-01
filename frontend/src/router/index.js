@@ -20,6 +20,12 @@ const routes = [
     meta: { title: '探店清单' }
   },
   {
+    path: '/explorers',
+    name: 'Explorers',
+    component: () => import('@/views/ExplorerManager.vue'),
+    meta: { title: '探店员管理' }
+  },
+  {
     path: '/lists/:id',
     name: 'ListDetail',
     component: () => import('@/views/ListDetail.vue'),

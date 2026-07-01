@@ -36,11 +36,6 @@
               />
             </a-col>
           </a-row>
-          <a-row :gutter="16" style="margin-top: 16px">
-            <a-col :span="24">
-              <a-statistic title="可用人总数" :value="statistics.totalAvailableCount" suffix="人" />
-            </a-col>
-          </a-row>
         </a-card>
 
         <a-card 
@@ -74,6 +69,19 @@
             查看清单详情
           </a-button>
         </a-card>
+
+        <!-- 探店员列表 -->
+        <a-card 
+          title="探店员" 
+          :bordered="false" 
+          style="margin-top: 16px"
+          v-if="currentExplorers.length > 0"
+        >
+          <div v-for="explorer in currentExplorers" :key="explorer.id" class="explorer-item">
+            <span class="explorer-name">{{ explorer.name }}</span>
+            <span class="explorer-phone" v-if="explorer.phone">{{ explorer.phone }}</span>
+          </div>
+        </a-card>
       </div>
     </div>
   </div>
@@ -100,6 +108,7 @@ const lists = ref([])
 const selectedListId = ref(null)
 const validShops = ref([])
 const mapInstance = ref(null)
+const currentExplorers = ref([])
 
 // 地图中心点
 const mapCenter = ref({
@@ -116,7 +125,8 @@ const mapMarkers = computed(() => {
     longitude: parseFloat(shop.longitude),
     latitude: parseFloat(shop.latitude),
     order: index + 1,
-    active: false
+    active: false,
+    explorers: shop.explorers || []
   }))
 })
 
@@ -128,7 +138,17 @@ const handleMapReady = (map) => {
 
 // 标记点点击
 const handleMarkerClick = (marker) => {
-  message.info(`店铺：${marker.name}`)
+  // 显示该店铺的探店员
+  if (marker.explorers && marker.explorers.length > 0) {
+    currentExplorers.value = marker.explorers
+  } else {
+    currentExplorers.value = []
+  }
+  
+  const explorerInfo = marker.explorers && marker.explorers.length > 0
+    ? ` | 探店员: ${marker.explorers.map(e => e.name + (e.phone ? '(' + e.phone + ')' : '')).join(', ')}`
+    : ''
+  message.info(`店铺：${marker.name}${explorerInfo}`)
 }
 
 // 加载统计数据
@@ -232,5 +252,27 @@ onMounted(async () => {
   left: 20px;
   width: 320px;
   z-index: 1000;
+}
+
+.explorer-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.explorer-item:last-child {
+  border-bottom: none;
+}
+
+.explorer-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.explorer-phone {
+  font-size: 12px;
+  color: #999;
 }
 </style>

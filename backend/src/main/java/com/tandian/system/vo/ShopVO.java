@@ -5,6 +5,7 @@ import com.tandian.system.entity.Shop;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 店铺详情VO
@@ -58,6 +59,12 @@ public class ShopVO implements Serializable {
 
     /** 可用人人数 */
     private Integer availableCount;
+
+    /** 关联探店员列表 */
+    private List<ExplorerVO> explorers;
+
+    /** 探店员名称（导出用，逗号分隔） */
+    private String explorerNames;
 
     /** 创建时间 */
     private LocalDateTime createdAt;

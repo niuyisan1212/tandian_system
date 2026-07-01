@@ -270,3 +270,50 @@ export function updateSystemConfig(data) {
     data
   })
 }
+
+/**
+ * 探店员相关API
+ */
+
+// 获取探店员列表
+export function getExplorerList(params) {
+  return request({
+    url: '/explorers',
+    method: 'get',
+    params
+  })
+}
+
+// 获取探店员详情
+export function getExplorerById(id) {
+  return request({
+    url: `/explorers/${id}`,
+    method: 'get'
+  })
+}
+
+// 创建探店员
+export function createExplorer(data) {
+  return request({
+    url: '/explorers',
+    method: 'post',
+    data
+  })
+}
+
+// 更新探店员
+export function updateExplorer(id, data) {
+  return request({
+    url: `/explorers/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 删除探店员
+export function deleteExplorer(id) {
+  return request({
+    url: `/explorers/${id}`,
+    method: 'delete'
+  })
+}
