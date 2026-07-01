@@ -1,6 +1,7 @@
 package com.tandian.system.service;
 
 import com.tandian.system.entity.ScheduledTask;
+import com.tandian.system.vo.ExplorerVO;
 import com.tandian.system.vo.ShopVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -119,6 +120,7 @@ public class EmailService {
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>类别</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>地址</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>可用人数</th>");
+        sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>探店员</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>过期时间</th>");
         sb.append("</tr>");
 
@@ -130,6 +132,7 @@ public class EmailService {
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getCategoryText() != null ? shop.getCategoryText() : "其他").append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getAddress()).append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getAvailableCount() != null ? shop.getAvailableCount() : 1).append(" 人</td>");
+            sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(buildExplorerText(shop)).append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee; color: #ff4d4f; font-weight: bold;'>").append(shop.getExpireTime()).append("</td>");
             sb.append("</tr>");
         }
@@ -155,6 +158,7 @@ public class EmailService {
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>类别</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>地址</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>可用人数</th>");
+        sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>探店员</th>");
         sb.append("<th style='padding: 10px; border: 1px solid #eee; text-align: left;'>过期时间</th>");
         sb.append("</tr>");
 
@@ -167,6 +171,7 @@ public class EmailService {
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getCategoryText() != null ? shop.getCategoryText() : "其他").append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getAddress()).append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getAvailableCount() != null ? shop.getAvailableCount() : 1).append(" 人</td>");
+            sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(buildExplorerText(shop)).append("</td>");
             sb.append("<td style='padding: 8px; border: 1px solid #eee;'>").append(shop.getExpireTime() != null ? shop.getExpireTime().toString() : "不限").append("</td>");
             sb.append("</tr>");
         }
@@ -174,6 +179,25 @@ public class EmailService {
         sb.append("</table>");
         sb.append("<p style='color: #999; font-size: 12px; margin-top: 20px;'>此邮件由「大众点评探店路线规划系统」自动发送，请勿回复。</p>");
         sb.append("</div>");
+        return sb.toString();
+    }
+
+    /**
+     * 构建探店员文本：姓名(手机号),姓名
+     */
+    private String buildExplorerText(ShopVO shop) {
+        if (shop.getExplorers() == null || shop.getExplorers().isEmpty()) {
+            return "-";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < shop.getExplorers().size(); i++) {
+            ExplorerVO e = shop.getExplorers().get(i);
+            if (i > 0) sb.append(", ");
+            sb.append(e.getName());
+            if (e.getPhone() != null && !e.getPhone().isEmpty()) {
+                sb.append("(").append(e.getPhone()).append(")");
+            }
+        }
         return sb.toString();
     }
 }

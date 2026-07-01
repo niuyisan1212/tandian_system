@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tandian.system.entity.ScheduledTask;
 import com.tandian.system.entity.Shop;
+import com.tandian.system.entity.Explorer;
 import com.tandian.system.mapper.ScheduledTaskMapper;
+import com.tandian.system.vo.ExplorerVO;
 import com.tandian.system.vo.ShopVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -33,6 +35,9 @@ public class ScheduledTaskService extends ServiceImpl<ScheduledTaskMapper, Sched
 
     @Resource
     private ShopService shopService;
+
+    @Resource
+    private ExplorerService explorerService;
 
     private ThreadPoolTaskScheduler taskScheduler;
     private final Map<String, ScheduledFuture<?>> taskFutures = new ConcurrentHashMap<>();
@@ -148,6 +153,9 @@ public class ScheduledTaskService extends ServiceImpl<ScheduledTaskMapper, Sched
         List<Shop> shops = shopService.list(wrapper);
         List<ShopVO> shopVOs = shops.stream().map(ShopVO::fromEntity).collect(Collectors.toList());
 
+        // 填充探店员信息
+        fillExplorers(shopVOs);
+
         if (shopVOs.isEmpty()) {
             log.info("【过期提醒】明天({})没有即将过期的店铺", tomorrowStr);
             return "明天(" + tomorrowStr + ")没有即将过期的店铺";
@@ -216,6 +224,9 @@ public class ScheduledTaskService extends ServiceImpl<ScheduledTaskMapper, Sched
                 .map(ShopVO::fromEntity)
                 .collect(Collectors.toList());
 
+        // 填充探店员信息
+        fillExplorers(top5);
+
         // 发送邮件
         if (task.getNotifyEnabled() != null && task.getNotifyEnabled() == 1) {
             String subject = "探店每周推荐 - 精选" + top5.size() + "家店铺";
@@ -272,5 +283,17 @@ public class ScheduledTaskService extends ServiceImpl<ScheduledTaskMapper, Sched
             throw new RuntimeException("任务不存在");
         }
         executeTask(task.getTaskKey());
+    }
+
+    /**
+     * 填充店铺的探店员列表
+     */
+    private void fillExplorers(List<ShopVO> voList) {
+        for (ShopVO vo : voList) {
+            List<Explorer> explorers = explorerService.getExplorersByShopId(vo.getId());
+            vo.setExplorers(explorers.stream()
+                    .map(ExplorerVO::fromEntity)
+                    .collect(Collectors.toList()));
+        }
     }
 }
